@@ -11,7 +11,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { channelIds = [], ...data } = botSchema.parse(await request.json());
-    await validatePublicUrl(data.url);
+    if (data.monitorKind === "PRODUCT") await validatePublicUrl(data.url);
     const bot = await prisma.bot.create({ data: { ...data, channels: { create: channelIds.map((notificationChannelId) => ({ notificationChannelId })) } } });
     return NextResponse.json({ success: true, bot }, { status: 201 });
   } catch (error) { return apiError(error); }

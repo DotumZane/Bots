@@ -4,9 +4,15 @@ export const botSchema = z.object({
   name: z.string().min(1).max(200),
   url: z.string().url(),
   hostname: z.string().min(1).max(255),
+  monitorKind: z.enum(["PRODUCT", "HTTP", "TCP"]).default("PRODUCT"),
+  tcpPort: z.number().int().min(1).max(65535).nullable().optional(),
+  latencyThresholdMs: z.number().int().min(1).max(60000).default(1000),
+  notifyOnDown: z.boolean().default(true),
+  notifyOnRecovery: z.boolean().default(true),
+  notifyOnHighLatency: z.boolean().default(true),
   imageUrl: z.string().url().nullable().optional(),
   enabled: z.boolean().default(true),
-  checkIntervalMinutes: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30), z.literal(60), z.literal(120), z.literal(240), z.literal(480), z.literal(720), z.literal(1440)]),
+  checkIntervalMinutes: z.union([z.literal(1), z.literal(5), z.literal(10), z.literal(15), z.literal(30), z.literal(60), z.literal(120), z.literal(240), z.literal(480), z.literal(720), z.literal(1440)]),
   browserMode: z.boolean().default(false),
   notifyOnPriceDrop: z.boolean().default(true),
   notifyOnTargetPrice: z.boolean().default(false),
@@ -30,6 +36,9 @@ export const botSchema = z.object({
   customUserAgent: z.string().max(500).nullable().optional(),
   customHeadersJson: z.string().max(5000).nullable().optional(),
   channelIds: z.array(z.string()).optional(),
+}).superRefine((value, context) => {
+  if (value.monitorKind === "TCP" && value.tcpPort == null) context.addIssue({ code: "custom", path: ["tcpPort"], message: "A TCP port is required." });
+  if (value.monitorKind === "HTTP" && !/^https?:\/\//i.test(value.url)) context.addIssue({ code: "custom", path: ["url"], message: "An HTTP or HTTPS URL is required." });
 });
 
 export const analyzeSchema = z.object({ url: z.string().url(), browserMode: z.boolean().optional() });

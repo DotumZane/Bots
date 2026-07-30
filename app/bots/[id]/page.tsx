@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { BotForm } from "@/components/BotForm";
 import { AdvancedBotSettings } from "@/components/AdvancedBotSettings";
 import { HistoryChart } from "@/components/HistoryChart";
+import { UptimeForm } from "@/components/UptimeForm";
 
 export const dynamic = "force-dynamic";
 export default async function EditBot({ params }: { params: Promise<{ id: string }> }) {
@@ -14,21 +15,22 @@ export default async function EditBot({ params }: { params: Promise<{ id: string
   ]);
   if (!bot) notFound();
   const latest = bot.states[0];
+  const uptime = bot.monitorKind !== "PRODUCT";
   const pending = bot.states.filter((state) => !state.confirmed && state.successful).length;
   const health = [
     ["Status", bot.enabled ? bot.lastError ? "Needs attention" : "Healthy" : "Paused"],
     ["Detection", latest?.detectionMethod?.replaceAll("_", " ") ?? "No checks yet"],
-    ["Confirmation", pending ? `${pending} pending result${pending === 1 ? "" : "s"}` : "Confirmed"],
+    [uptime ? "Response time" : "Confirmation", uptime ? latest?.responseTimeMs != null ? `${latest.responseTimeMs} ms` : "No checks yet" : pending ? `${pending} pending result${pending === 1 ? "" : "s"}` : "Confirmed"],
     ["Errors", bot.consecutiveErrors ? `${bot.consecutiveErrors} consecutive` : "None"],
     ["Last success", bot.lastSuccessfulCheckAt?.toLocaleString() ?? "Never"],
     ["Warning", latest?.warning ?? "None"],
   ];
   return <><div className="crumb"><Link href="/">Dashboard</Link><span>/</span><span>Edit Bot</span></div>
-    <section className="pageHead compact"><div><p className="eyebrow">Product monitor</p><h1>Edit {bot.name}</h1><p>Rules, diagnostics, variants, delivery, and history in one place.</p></div></section>
+    <section className="pageHead compact"><div><p className="eyebrow">{uptime ? "Uptime monitor" : "Product monitor"}</p><h1>Edit {bot.name}</h1><p>{uptime ? "Reachability, latency, delivery, and history in one place." : "Rules, diagnostics, variants, delivery, and history in one place."}</p></div></section>
     <section className="healthGrid">{health.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>
-    <BotForm initial={JSON.parse(JSON.stringify(bot))}/>
+    {uptime ? <UptimeForm initial={JSON.parse(JSON.stringify(bot))}/> : <BotForm initial={JSON.parse(JSON.stringify(bot))}/>}
     <AdvancedBotSettings bot={JSON.parse(JSON.stringify(bot))} channels={JSON.parse(JSON.stringify(channels))}/>
-    <HistoryChart states={JSON.parse(JSON.stringify(bot.states))} targetPriceMinor={bot.targetPriceMinor}/>
+    <HistoryChart states={JSON.parse(JSON.stringify(bot.states))} targetPriceMinor={bot.targetPriceMinor} uptime={uptime} latencyThresholdMs={bot.latencyThresholdMs}/>
     <section className="formCard eventCard"><p className="eyebrow">Activity</p><h2>Alerts & delivery</h2>{bot.events.length ? <div className="eventList">{bot.events.map((event) => <div key={event.id}><span className="badge muted">{event.eventType.replaceAll("_"," ")}</span><b>{event.message}</b><small>{event.createdAt.toLocaleString()} · {event.deliveries.length ? `${event.deliveries.filter((d)=>d.successful).length}/${event.deliveries.length} delivered` : "No channels assigned"}</small></div>)}</div> : <div className="miniEmpty">Meaningful changes and notification deliveries will appear here.</div>}</section>
   </>;
 }

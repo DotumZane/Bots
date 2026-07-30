@@ -2,11 +2,62 @@ import { prisma } from "./prisma";
 import { fetchProduct } from "./fetch-product";
 import { detectChanges } from "./change-detection";
 import { sendNotification } from "./notifications";
-import { EventType } from "@prisma/client";
+import { Availability, DetectionMethod, EventType, MonitorKind } from "@prisma/client";
+import { checkHttp, checkTcp } from "./uptime";
+
+async function deliverEvents(botId: string, stateId: string, target: string) {
+  const createdEvents = await prisma.notificationEvent.findMany({ where: { currentStateId: stateId } });
+  if (!createdEvents.length) return;
+  const channels = await prisma.botNotificationChannel.findMany({ where: { botId, notificationChannel: { enabled: true } }, include: { notificationChannel: true } });
+  for (const event of createdEvents) {
+    for (const link of channels) {
+      try {
+        const delivery = await sendNotification(link.notificationChannel.type, link.notificationChannel.configurationEncrypted, `${event.message}\n\nOpen target: ${target}`);
+        await prisma.notificationDelivery.create({ data: { notificationEventId: event.id, notificationChannelId: link.notificationChannelId, successful: true, responseStatus: delivery.status, responseBody: delivery.responseBody } });
+      } catch (deliveryError) {
+        await prisma.notificationDelivery.create({ data: { notificationEventId: event.id, notificationChannelId: link.notificationChannelId, successful: false, error: deliveryError instanceof Error ? deliveryError.message : "Delivery failed." } });
+      }
+    }
+  }
+}
 
 export async function checkBot(id: string) {
   const bot = await prisma.bot.findUnique({ where: { id }, include: { states: { where: { successful: true, confirmed: true }, orderBy: { checkedAt: "desc" }, take: 1 } } });
   if (!bot) throw new Error("Bot not found.");
+  if (bot.monitorKind !== MonitorKind.PRODUCT) {
+    const result = bot.monitorKind === MonitorKind.HTTP
+      ? await checkHttp(bot.url)
+      : await checkTcp(bot.hostname, bot.tcpPort ?? 80);
+    const prior = bot.states[0] ?? null;
+    const state = await prisma.productState.create({ data: {
+      botId: id,
+      availability: result.reachable ? Availability.IN_STOCK : Availability.OUT_OF_STOCK,
+      detectionMethod: bot.monitorKind === MonitorKind.HTTP ? DetectionMethod.UPTIME_HTTP : DetectionMethod.UPTIME_TCP,
+      successful: true,
+      confirmed: true,
+      reachable: result.reachable,
+      responseTimeMs: result.responseTimeMs,
+      warning: result.error ?? null,
+      title: bot.name,
+    } });
+    let events: { type: EventType; description: string }[] = [];
+    if (!result.reachable && bot.notifyOnDown && prior?.reachable !== false) events.push({ type: EventType.ENDPOINT_DOWN, description: `Endpoint unreachable${result.error ? ` (${result.error})` : ""}` });
+    if (result.reachable && bot.notifyOnRecovery && prior?.reachable === false) events.push({ type: EventType.ENDPOINT_RECOVERED, description: `Endpoint recovered in ${result.responseTimeMs} ms` });
+    if (result.reachable && bot.notifyOnHighLatency && result.responseTimeMs > bot.latencyThresholdMs && (prior?.responseTimeMs == null || prior.responseTimeMs <= bot.latencyThresholdMs)) {
+      events.push({ type: EventType.HIGH_LATENCY, description: `High latency: ${result.responseTimeMs} ms (threshold ${bot.latencyThresholdMs} ms)` });
+    }
+    if (events.length && bot.notificationCooldownMinutes > 0) {
+      const recent = await prisma.notificationEvent.findMany({ where: { botId: id, createdAt: { gte: new Date(Date.now() - bot.notificationCooldownMinutes * 60_000) } }, select: { eventType: true } });
+      const coolingDown = new Set(recent.map((event) => event.eventType));
+      events = events.filter((event) => !coolingDown.has(event.type));
+    }
+    await prisma.$transaction([
+      prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: result.reachable ? null : result.error ?? "Endpoint unreachable.", consecutiveErrors: result.reachable ? 0 : { increment: 1 }, nextCheckAt: new Date(Date.now() + bot.checkIntervalMinutes * 60_000), lockedAt: null } }),
+      ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${bot.name}` } })),
+    ]);
+    await deliverEvents(id, state.id, bot.url);
+    return { state, events, confirmed: true, warnings: result.error ? [result.error] : [] };
+  }
   try {
     const result = await fetchProduct(bot.url, { browserMode: bot.browserMode, waitForSelector: bot.waitForSelector ?? undefined, pageLoadDelayMs: bot.pageLoadDelayMs,
       selectors: { price: bot.priceSelector ?? undefined, regularPrice: bot.regularPriceSelector ?? undefined, availability: bot.availabilitySelector ?? undefined, title: bot.titleSelector ?? undefined, image: bot.imageSelector ?? undefined, variant: bot.variantSelector ?? undefined } });
@@ -31,20 +82,7 @@ export async function checkBot(id: string) {
       prisma.bot.update({ where: { id }, data: { name: result.title ?? bot.name, imageUrl: result.imageUrl ?? bot.imageUrl, lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: null, consecutiveErrors: 0, nextCheckAt: new Date(Date.now() + bot.checkIntervalMinutes * 60_000), lockedAt: null } }),
       ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${result.title ?? bot.name}` } })),
     ]);
-    const createdEvents = await prisma.notificationEvent.findMany({ where: { currentStateId: state.id } });
-    if (createdEvents.length) {
-      const channels = await prisma.botNotificationChannel.findMany({ where: { botId: id, notificationChannel: { enabled: true } }, include: { notificationChannel: true } });
-      for (const event of createdEvents) {
-        for (const link of channels) {
-          try {
-            const delivery = await sendNotification(link.notificationChannel.type, link.notificationChannel.configurationEncrypted, `${event.message}\n\nOpen product: ${bot.url}`);
-            await prisma.notificationDelivery.create({ data: { notificationEventId: event.id, notificationChannelId: link.notificationChannelId, successful: true, responseStatus: delivery.status, responseBody: delivery.responseBody } });
-          } catch (deliveryError) {
-            await prisma.notificationDelivery.create({ data: { notificationEventId: event.id, notificationChannelId: link.notificationChannelId, successful: false, error: deliveryError instanceof Error ? deliveryError.message : "Delivery failed." } });
-          }
-        }
-      }
-    }
+    await deliverEvents(id, state.id, bot.url);
     return { state, events, confirmed, warnings: result.warnings };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Monitoring failed.";

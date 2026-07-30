@@ -22,6 +22,14 @@ enum DetectionMethod {
   HTML_TEXT
   CSS_SELECTOR
   PLAYWRIGHT
+  UPTIME_HTTP
+  UPTIME_TCP
+}
+
+enum MonitorKind {
+  PRODUCT
+  HTTP
+  TCP
 }
 
 enum ChannelType {
@@ -43,6 +51,9 @@ enum EventType {
   MONITOR_RECOVERED
   HISTORICAL_LOW
   PRODUCT_CHANGED
+  ENDPOINT_DOWN
+  ENDPOINT_RECOVERED
+  HIGH_LATENCY
 }
 
 model Bot {
@@ -50,6 +61,12 @@ model Bot {
   name                        String
   url                         String
   hostname                    String
+  monitorKind                 MonitorKind @default(PRODUCT)
+  tcpPort                     Int?
+  latencyThresholdMs          Int      @default(1000)
+  notifyOnDown                Boolean  @default(true)
+  notifyOnRecovery            Boolean  @default(true)
+  notifyOnHighLatency         Boolean  @default(true)
   imageUrl                    String?
   enabled                     Boolean  @default(true)
   checkIntervalMinutes        Int      @default(30)
@@ -109,6 +126,8 @@ model ProductState {
   detectionMethod    DetectionMethod
   detectedPricesJson String?
   warning            String?
+  reachable          Boolean?
+  responseTimeMs     Int?
   checkedAt          DateTime        @default(now())
   successful         Boolean         @default(true)
   confirmed          Boolean         @default(false)
