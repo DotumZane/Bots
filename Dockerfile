@@ -14,6 +14,9 @@ RUN npx prisma generate && npm run build
 
 FROM base AS runtime
 ENV NODE_ENV=production PORT=3847 DATA_DIR=/data DATABASE_URL=file:/data/bots.db BOTS_ENCRYPTION_KEY_FILE=/data/encryption.key PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /ms-playwright /ms-playwright
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
