@@ -14,7 +14,6 @@ RUN npx prisma generate && npm run build
 
 FROM base AS runtime
 ENV NODE_ENV=production PORT=3847 DATA_DIR=/data DATABASE_URL=file:/data/bots.db BOTS_ENCRYPTION_KEY_FILE=/data/encryption.key PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN groupadd --gid 1000 bots && useradd --uid 1000 --gid bots --create-home bots
 COPY --from=deps /ms-playwright /ms-playwright
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
@@ -23,8 +22,8 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/worker ./worker
 COPY --from=build /app/lib ./lib
 COPY --from=build /app/package*.json /app/tsconfig.json /app/scripts/start.sh ./
-RUN mkdir -p /data/cache /data/logs && chown -R bots:bots /app /data /ms-playwright && chmod +x /app/start.sh
-USER bots
+RUN mkdir -p /data/cache /data/logs && chown -R node:node /app /data /ms-playwright && chmod +x /app/start.sh
+USER node
 EXPOSE 3847
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD node -e "fetch('http://127.0.0.1:3847/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 ENTRYPOINT ["/app/start.sh"]
