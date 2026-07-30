@@ -16,6 +16,12 @@ Bots is a private, self-hosted product monitor for Unraid. Give it a product URL
 - One SQLite database; all durable state lives under `/data`
 - Separate scheduler process with database locking and bounded concurrency
 - Responsive light/dark interface designed for Unraid WebUI
+- Interactive price-history charts with target lines and date filters
+- Bot health diagnostics, confirmation status, warnings, and delivery activity
+- Dashboard search, status filters, sorting, selection, and bulk controls
+- Historical-low and product/variant-change alerts with notification cooldowns
+- Variant labels and CSS-based variant value tracking
+- Per-bot notification channel assignment and test-alert delivery
 
 ## Unraid installation
 

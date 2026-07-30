@@ -41,6 +41,8 @@ enum EventType {
   PRICE_INCREASE
   MONITOR_ERROR
   MONITOR_RECOVERED
+  HISTORICAL_LOW
+  PRODUCT_CHANGED
 }
 
 model Bot {
@@ -74,6 +76,11 @@ model Bot {
   notifyOnAvailable           Boolean  @default(true)
   notifyOnUnavailable         Boolean  @default(false)
   notifyOnPriceIncrease       Boolean  @default(false)
+  notifyOnHistoricalLow       Boolean  @default(false)
+  notifyOnProductChange       Boolean  @default(false)
+  variantName                 String?
+  variantSelector             String?
+  variantValue                String?
   minimumChangeMinor          Int      @default(1)
   minimumChangePercent        Float    @default(0)
   confirmationCount           Int      @default(2)
@@ -98,6 +105,7 @@ model ProductState {
   availability       Availability    @default(UNKNOWN)
   title              String?
   imageUrl           String?
+  variantValue       String?
   detectionMethod    DetectionMethod
   detectedPricesJson String?
   warning            String?

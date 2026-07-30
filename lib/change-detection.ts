@@ -1,8 +1,8 @@
 import { Availability, EventType } from "@prisma/client";
 import type { ChangeEvent } from "./types";
 
-type State = { priceMinor: number | null; availability: Availability };
-type Rules = { notifyOnPriceDrop: boolean; notifyOnTargetPrice: boolean; targetPriceMinor: number | null; notifyOnAvailable: boolean; notifyOnUnavailable: boolean; notifyOnPriceIncrease: boolean; minimumChangeMinor: number; minimumChangePercent: number };
+type State = { priceMinor: number | null; availability: Availability; title?: string | null; variantValue?: string | null };
+type Rules = { notifyOnPriceDrop: boolean; notifyOnTargetPrice: boolean; targetPriceMinor: number | null; notifyOnAvailable: boolean; notifyOnUnavailable: boolean; notifyOnPriceIncrease: boolean; notifyOnHistoricalLow?: boolean; notifyOnProductChange?: boolean; minimumChangeMinor: number; minimumChangePercent: number };
 
 export function detectChanges(previous: State | null, current: State, rules: Rules): ChangeEvent[] {
   if (!previous) return [];
@@ -18,5 +18,6 @@ export function detectChanges(previous: State | null, current: State, rules: Rul
   }
   if (rules.notifyOnAvailable && previous.availability !== Availability.IN_STOCK && current.availability === Availability.IN_STOCK) events.push({ type: EventType.BACK_IN_STOCK, description: "Back in stock" });
   if (rules.notifyOnUnavailable && previous.availability === Availability.IN_STOCK && current.availability === Availability.OUT_OF_STOCK) events.push({ type: EventType.OUT_OF_STOCK, description: "Out of stock" });
+  if (rules.notifyOnProductChange && ((previous.title && current.title && previous.title !== current.title) || previous.variantValue !== current.variantValue)) events.push({ type: EventType.PRODUCT_CHANGED, description: "Product or variant changed" });
   return events;
 }

@@ -7,6 +7,7 @@ export type DetectionResult = {
   currency?: string;
   availability: Availability;
   imageUrl?: string;
+  variantValue?: string;
   hostname: string;
   detectionMethod: DetectionMethod;
   detectedPrices: number[];

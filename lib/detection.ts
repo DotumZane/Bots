@@ -24,6 +24,7 @@ export function analyzeHtml(html: string, pageUrl: string, selectors?: Record<st
   const warnings: string[] = [];
   const prices: number[] = [];
   let result: DetectionResult = { availability: Availability.UNKNOWN, hostname, detectionMethod: DetectionMethod.HTML_TEXT, detectedPrices: prices, warnings };
+  if (selectors?.variant) result.variantValue = $(selectors.variant).first().text().trim() || $(selectors.variant).first().attr("content") || undefined;
 
   if (selectors?.price) {
     const text = $(selectors.price).first().text();
