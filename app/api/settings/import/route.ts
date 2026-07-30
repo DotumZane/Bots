@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server"; import { z } from "zod"; import { prisma } from "@/lib/prisma"; import { apiError } from "@/lib/api";
+const schema = z.object({ settings: z.array(z.object({ key: z.string(), value: z.string() })).default([]) });
+export async function POST(request: Request) { try { const input = schema.parse(await request.json()); await prisma.$transaction(input.settings.map((item) => prisma.appSetting.upsert({ where: { key: item.key }, create: item, update: { value: item.value } }))); return NextResponse.json({ success: true }); } catch (error) { return apiError(error); } }

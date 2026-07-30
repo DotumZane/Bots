@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Availability {
+  IN_STOCK
+  OUT_OF_STOCK
+  PREORDER
+  BACKORDER
+  UNKNOWN
+}
+
+enum DetectionMethod {
+  JSON_LD
+  OPEN_GRAPH
+  META_TAG
+  HTML_TEXT
+  CSS_SELECTOR
+  PLAYWRIGHT
+}
+
+enum ChannelType {
+  DISCORD
+  GOTIFY
+  PUSHOVER
+  TELEGRAM
+  SMTP
+  WEBHOOK
+}
+
+enum EventType {
+  PRICE_DROP
+  TARGET_PRICE_REACHED
+  BACK_IN_STOCK
+  OUT_OF_STOCK
+  PRICE_INCREASE
+  MONITOR_ERROR
+  MONITOR_RECOVERED
+}
+
+model Bot {
+  id                          String   @id @default(cuid())
+  name                        String
+  url                         String
+  hostname                    String
+  imageUrl                    String?
+  enabled                     Boolean  @default(true)
+  checkIntervalMinutes        Int      @default(30)
+  nextCheckAt                 DateTime @default(now())
+  lastCheckAt                 DateTime?
+  lastSuccessfulCheckAt       DateTime?
+  lastError                   String?
+  consecutiveErrors           Int      @default(0)
+  browserMode                 Boolean  @default(false)
+  pageLoadDelayMs             Int      @default(0)
+  waitForSelector             String?
+  customUserAgent             String?
+  customHeadersJson           String?
+  priceSelector               String?
+  regularPriceSelector        String?
+  availabilitySelector        String?
+  titleSelector               String?
+  imageSelector               String?
+  inStockText                 String?
+  outOfStockText              String?
+  notifyOnPriceDrop           Boolean  @default(true)
+  notifyOnTargetPrice         Boolean  @default(false)
+  targetPriceMinor            Int?
+  notifyOnAvailable           Boolean  @default(true)
+  notifyOnUnavailable         Boolean  @default(false)
+  notifyOnPriceIncrease       Boolean  @default(false)
+  minimumChangeMinor          Int      @default(1)
+  minimumChangePercent        Float    @default(0)
+  confirmationCount           Int      @default(2)
+  notificationCooldownMinutes Int      @default(60)
+  lockedAt                    DateTime?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  states                      ProductState[]
+  channels                    BotNotificationChannel[]
+  events                      NotificationEvent[]
+
+  @@index([enabled, nextCheckAt])
+}
+
+model ProductState {
+  id                 String          @id @default(cuid())
+  botId              String
+  bot                Bot             @relation(fields: [botId], references: [id], onDelete: Cascade)
+  priceMinor         Int?
+  regularPriceMinor  Int?
+  currency           String?
+  availability       Availability    @default(UNKNOWN)
+  title              String?
+  imageUrl           String?
+  detectionMethod    DetectionMethod
+  detectedPricesJson String?
+  warning            String?
+  checkedAt          DateTime        @default(now())
+  successful         Boolean         @default(true)
+  confirmed          Boolean         @default(false)
+  previousEvents     NotificationEvent[] @relation("PreviousState")
+  currentEvents      NotificationEvent[] @relation("CurrentState")
+
+  @@index([botId, checkedAt])
+}
+
+model NotificationChannel {
+  id                     String   @id @default(cuid())
+  name                   String
+  type                   ChannelType
+  enabled                Boolean  @default(true)
+  configurationEncrypted String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  bots                   BotNotificationChannel[]
+  deliveries             NotificationDelivery[]
+}
+
+model BotNotificationChannel {
+  botId                String
+  bot                  Bot                 @relation(fields: [botId], references: [id], onDelete: Cascade)
+  notificationChannelId String
+  notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+
+  @@id([botId, notificationChannelId])
+}
+
+model NotificationEvent {
+  id              String       @id @default(cuid())
+  botId           String
+  bot             Bot          @relation(fields: [botId], references: [id], onDelete: Cascade)
+  eventType       EventType
+  previousStateId String?
+  previousState   ProductState? @relation("PreviousState", fields: [previousStateId], references: [id])
+  currentStateId  String?
+  currentState    ProductState? @relation("CurrentState", fields: [currentStateId], references: [id])
+  message         String
+  createdAt       DateTime     @default(now())
+  deliveries      NotificationDelivery[]
+
+  @@index([eventType, createdAt])
+}
+
+model NotificationDelivery {
+  id                    String   @id @default(cuid())
+  notificationEventId   String
+  notificationEvent     NotificationEvent @relation(fields: [notificationEventId], references: [id], onDelete: Cascade)
+  notificationChannelId String
+  notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  successful            Boolean
+  responseStatus        Int?
+  responseBody          String?
+  error                 String?
+  sentAt                DateTime @default(now())
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

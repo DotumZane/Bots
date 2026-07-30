@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server"; import { prisma } from "@/lib/prisma"; import { channelSchema } from "@/lib/validation"; import { encrypt } from "@/lib/crypto"; import { apiError } from "@/lib/api";
+const safe = <T extends { configurationEncrypted: string }>(channel: T) => ({ ...channel, configurationEncrypted: undefined, configured: true });
+export async function GET() { return NextResponse.json({ success: true, channels: (await prisma.notificationChannel.findMany({ orderBy: { createdAt: "desc" } })).map(safe) }); }
+export async function POST(request: Request) { try { const { configuration, ...data } = channelSchema.parse(await request.json()); const channel = await prisma.notificationChannel.create({ data: { ...data, configurationEncrypted: await encrypt(configuration) } }); return NextResponse.json({ success: true, channel: safe(channel) }, { status: 201 }); } catch (error) { return apiError(error); } }

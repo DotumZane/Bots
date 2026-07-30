@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server"; import { prisma } from "@/lib/prisma"; import { z } from "zod"; import { apiError } from "@/lib/api";
+const schema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]));
+export async function GET() { const settings = Object.fromEntries((await prisma.appSetting.findMany()).map(({ key, value }) => [key, JSON.parse(value)])); return NextResponse.json({ success: true, settings }); }
+export async function PUT(request: Request) { try { const settings = schema.parse(await request.json()); await prisma.$transaction(Object.entries(settings).map(([key, value]) => prisma.appSetting.upsert({ where: { key }, create: { key, value: JSON.stringify(value) }, update: { value: JSON.stringify(value) } }))); return NextResponse.json({ success: true, settings }); } catch (error) { return apiError(error); } }

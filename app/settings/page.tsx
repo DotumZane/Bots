@@ -1,0 +1,2 @@
+import { prisma } from "@/lib/prisma"; import { SettingsForm } from "@/components/SettingsForm";
+export const dynamic = "force-dynamic"; export default async function Settings() { let initial = {}; try { initial = Object.fromEntries((await prisma.appSetting.findMany()).map((s) => [s.key, JSON.parse(s.value)])); } catch {} return <><section className="pageHead compact"><div><p className="eyebrow">Preferences</p><h1>Settings</h1><p>Control defaults, performance, appearance, and retention.</p></div></section><SettingsForm initial={initial} /></>; }

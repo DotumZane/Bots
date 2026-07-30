@@ -1,0 +1,3 @@
+import { notFound } from "next/navigation"; import Link from "next/link"; import { prisma } from "@/lib/prisma"; import { BotForm } from "@/components/BotForm";
+export const dynamic = "force-dynamic";
+export default async function EditBot({ params }: { params: Promise<{ id: string }> }) { const { id } = await params; const bot = await prisma.bot.findUnique({ where: { id } }); if (!bot) notFound(); return <><div className="crumb"><Link href="/">Dashboard</Link><span>/</span><span>Edit Bot</span></div><section className="pageHead compact"><div><p className="eyebrow">Product monitor</p><h1>Edit {bot.name}</h1><p>Update monitoring rules, schedule, and detection.</p></div></section><BotForm initial={JSON.parse(JSON.stringify(bot))} /></>; }

@@ -1,0 +1,16 @@
+services:
+  bots:
+    build: .
+    container_name: bots
+    ports:
+      - "3847:3847"
+    volumes:
+      - ./data:/data
+    environment:
+      PORT: 3847
+      DATA_DIR: /data
+      DATABASE_URL: file:/data/bots.db
+      TZ: America/Los_Angeles
+      BOTS_ENCRYPTION_KEY_FILE: /data/encryption.key
+      MAX_CONCURRENT_CHECKS: 3
+    restart: unless-stopped

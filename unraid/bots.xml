@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Bots</Name>
+  <Repository>ghcr.io/dotumzane/bots:latest</Repository>
+  <Registry>https://github.com/DotumZane/Bots/pkgs/container/bots</Registry>
+  <Network>bridge</Network>
+  <WebUI>http://[IP]:[PORT:3847]</WebUI>
+  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.svg</Icon>
+  <Support>https://github.com/DotumZane/Bots/issues</Support>
+  <Project>https://github.com/DotumZane/Bots</Project>
+  <Overview>Private, self-hosted price and availability monitoring.</Overview>
+  <Category>Tools: Status: Other:</Category>
+  <Config Name="WebUI" Target="3847" Default="3847" Mode="tcp" Description="Bots web interface" Type="Port" Display="always" Required="true" Mask="false">3847</Config>
+  <Config Name="Appdata" Target="/data" Default="/mnt/user/appdata/bots" Mode="rw" Description="Database, configuration, cache, and encryption key" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/bots</Config>
+  <Config Name="Time zone" Target="TZ" Default="America/Los_Angeles" Description="IANA time zone" Type="Variable" Display="always" Required="true" Mask="false">America/Los_Angeles</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Description="Optional user ID" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Description="Optional group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="UMASK" Target="UMASK" Default="022" Description="Optional file creation mask" Type="Variable" Display="advanced" Required="false" Mask="false">022</Config>
+</Container>
