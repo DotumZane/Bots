@@ -19,7 +19,8 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
     let url: string;
     try {
       if (kind === "HTTP") {
-        const parsed = new URL(target);
+        const normalizedTarget = /^https?:\/\//i.test(target) ? target : `http://${target}`;
+        const parsed = new URL(normalizedTarget);
         hostname = parsed.hostname;
         url = parsed.toString();
       } else {
@@ -68,7 +69,7 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
       <div className="fieldGrid">
         <label>Monitor type<select value={kind} onChange={(event) => setKind(event.target.value as "HTTP" | "TCP")}><option value="HTTP">Website (HTTP/HTTPS)</option><option value="TCP">Server port (TCP)</option></select></label>
         <label>Monitor name<input name="name" required defaultValue={initial?.name} placeholder="My website" /></label>
-        <label>{kind === "HTTP" ? "Website URL" : "Server hostname or IP"}<input name="target" required defaultValue={initial ? kind === "HTTP" ? initial.url : initial.hostname : ""} placeholder={kind === "HTTP" ? "https://example.com" : "server.example.com"} /></label>
+        <label>{kind === "HTTP" ? "Website, hostname, or IP" : "Server hostname or IP"}<input name="target" required defaultValue={initial ? kind === "HTTP" ? initial.url : initial.hostname : ""} placeholder={kind === "HTTP" ? "example.com or 192.168.1.20:8080" : "server.example.com or 192.168.1.20"} /></label>
         {kind === "TCP" && <label>Port<input name="port" type="number" min="1" max="65535" required defaultValue={initial?.tcpPort ?? 443} /></label>}
       </div>
     </section>
