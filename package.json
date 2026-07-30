@@ -16,7 +16,9 @@
     "typecheck": "tsc --noEmit",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "docker:build": "docker buildx build --platform linux/amd64 --load -t ghcr.io/dotumzane/bots:latest .",
+    "docker:publish": "docker buildx build --platform linux/amd64 --push -t ghcr.io/dotumzane/bots:latest ."
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

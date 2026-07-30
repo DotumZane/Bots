@@ -68,6 +68,16 @@ npm run dev
 
 Run the scheduler separately with `npm run worker`. Other commands: `npm run build`, `npm run start`, `npm test`, `npm run test:e2e`, `npm run lint`, and `npm run typecheck`.
 
+### Publish the Unraid image from macOS
+
+With Docker Desktop running and authenticated to GHCR:
+
+```bash
+npm run docker:publish
+```
+
+This builds `linux/amd64` locally and publishes `ghcr.io/dotumzane/bots:latest`. Normal Git pushes do not build containers; the GitHub Actions workflow is retained as a manual fallback.
+
 ## Architecture
 
 Next.js App Router serves React pages and Zod-validated REST endpoints. Prisma owns SQLite. The detector fetches pages through the SSRF guard, parses static HTML first, and optionally falls back to Playwright. A separate worker claims due rows, runs bounded checks, confirms changes, persists states/events, and dispatches modular providers.
