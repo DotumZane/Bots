@@ -23,7 +23,6 @@ COPY --from=build /app/worker ./worker
 COPY --from=build /app/lib ./lib
 COPY --from=build /app/package*.json /app/tsconfig.json /app/scripts/start.sh ./
 RUN mkdir -p /data/cache /data/logs && chown -R node:node /app /data /ms-playwright && chmod +x /app/start.sh
-USER node
 EXPOSE 3847
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD node -e "fetch('http://127.0.0.1:3847/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 ENTRYPOINT ["/app/start.sh"]
