@@ -32,7 +32,8 @@ function valueFromHtml(html:string,options:{selector?:string|null;label?:string|
 }
 
 async function fetchWithBrowser(target:URL,selector?:string|null) {
-  const browser=await chromium.launch({headless:true});
+  let browser;
+  try{browser=await chromium.launch({headless:true});}catch(error){const message=error instanceof Error?error.message:"";if(message.includes("Executable doesn't exist")||message.includes("shared libraries")||message.includes("browser has been closed"))throw new Error("Browser scanning could not start. Update the Bots container and try again.");throw error;}
   try { const page=await browser.newPage({userAgent:USER_AGENT});
     await page.route("**/*",async(route)=>{if(route.request().isNavigationRequest()){try{await validatePublicUrl(route.request().url());}catch{return route.abort();}}return route.continue();});
     const response=await page.goto(target.toString(),{waitUntil:"domcontentloaded",timeout:30_000});

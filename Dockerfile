@@ -12,19 +12,17 @@ COPY . .
 ENV DATABASE_URL=file:/tmp/build.db
 RUN npx prisma generate && npm run build
 
-FROM base AS runtime
+FROM deps AS runtime
 ENV NODE_ENV=production PORT=3847 DATA_DIR=/data DATABASE_URL=file:/data/bots.db BOTS_ENCRYPTION_KEY_FILE=/data/encryption.key PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=deps /ms-playwright /ms-playwright
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/worker ./worker
 COPY --from=build /app/lib ./lib
-COPY --from=build /app/package*.json /app/tsconfig.json ./
+COPY --from=build /app/tsconfig.json ./
 COPY --chmod=755 --from=build /app/scripts/start.sh ./start.sh
 RUN mkdir -p /data/cache /data/logs && chown -R node:node /data
 EXPOSE 3847
