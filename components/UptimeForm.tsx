@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Initial = { id: string; name: string; url: string; hostname: string; monitorKind: "HTTP" | "TCP"; tcpPort: number | null; latencyThresholdMs: number; notifyOnDown: boolean; notifyOnRecovery: boolean; notifyOnHighLatency: boolean; checkIntervalMinutes: number; notificationCooldownMinutes: number; enabled: boolean; channels?: { notificationChannelId: string }[] };
+type Initial = { id: string; name: string; url: string; hostname: string; monitorKind: "HTTP" | "TCP"; tcpPort: number | null; latencyThresholdMs: number; notifyOnDown: boolean; notifyOnRecovery: boolean; notifyOnHighLatency: boolean; checkIntervalMinutes: number; checkIntervalSeconds?: number; notificationCooldownMinutes: number; enabled: boolean; channels?: { notificationChannelId: string }[] };
 export function UptimeForm({ initial }: { initial?: Initial }) {
   const router = useRouter();
   const [kind, setKind] = useState<"HTTP" | "TCP">(initial?.monitorKind ?? "HTTP");
@@ -41,7 +41,8 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
       notifyOnRecovery: data.get("notifyOnRecovery") === "on",
       notifyOnHighLatency: data.get("notifyOnHighLatency") === "on",
       enabled: initial?.enabled ?? true,
-      checkIntervalMinutes: Number(data.get("interval")),
+      checkIntervalMinutes: Math.max(1, Math.ceil(Number(data.get("interval")) / 60)),
+      checkIntervalSeconds: Number(data.get("interval")),
       browserMode: false,
       notifyOnPriceDrop: false,
       notifyOnTargetPrice: false,
@@ -82,7 +83,7 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
       </div>
       <div className="fieldGrid">
         <label>Slow-response threshold (ms)<input name="latencyThresholdMs" type="number" min="1" max="60000" defaultValue={initial?.latencyThresholdMs ?? 1000} required /></label>
-        <label>Check interval<select name="interval" defaultValue={initial?.checkIntervalMinutes ?? 5}><option value="1">1 minute</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></label>
+        <label>Check interval<select name="interval" defaultValue={initial?.checkIntervalSeconds ?? (initial?.checkIntervalMinutes ?? 5) * 60}><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900">15 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option></select></label>
         <label>Notification cooldown (minutes)<input name="cooldown" type="number" min="0" max="10080" defaultValue={initial?.notificationCooldownMinutes ?? 60} required /></label>
       </div>
       {error && <p className="formError">{error}</p>}

@@ -12,5 +12,5 @@ async function tick() {
   })));
 }
 process.on("SIGTERM", () => { stopping = true; }); process.on("SIGINT", () => { stopping = true; }); log("started");
-while (!stopping) { try { await tick(); } catch (error) { log("tick_failed", { error: error instanceof Error ? error.message : "unknown" }); } await new Promise((resolve) => setTimeout(resolve, 30_000)); }
+while (!stopping) { try { await tick(); } catch (error) { log("tick_failed", { error: error instanceof Error ? error.message : "unknown" }); } await new Promise((resolve) => setTimeout(resolve, 5_000)); }
 await prisma.$disconnect(); log("stopped");

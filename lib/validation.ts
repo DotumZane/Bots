@@ -13,6 +13,7 @@ export const botSchema = z.object({
   imageUrl: z.string().url().nullable().optional(),
   enabled: z.boolean().default(true),
   checkIntervalMinutes: z.union([z.literal(1), z.literal(5), z.literal(10), z.literal(15), z.literal(30), z.literal(60), z.literal(120), z.literal(240), z.literal(480), z.literal(720), z.literal(1440)]),
+  checkIntervalSeconds: z.union([z.literal(10), z.literal(30), z.literal(60), z.literal(300), z.literal(600), z.literal(900), z.literal(1800), z.literal(3600)]).optional(),
   browserMode: z.boolean().default(false),
   notifyOnPriceDrop: z.boolean().default(true),
   notifyOnTargetPrice: z.boolean().default(false),

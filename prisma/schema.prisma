@@ -70,6 +70,7 @@ model Bot {
   imageUrl                    String?
   enabled                     Boolean  @default(true)
   checkIntervalMinutes        Int      @default(30)
+  checkIntervalSeconds        Int      @default(1800)
   nextCheckAt                 DateTime @default(now())
   lastCheckAt                 DateTime?
   lastSuccessfulCheckAt       DateTime?

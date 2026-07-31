@@ -5,6 +5,11 @@ import { sendNotification } from "./notifications";
 import { Availability, DetectionMethod, EventType, MonitorKind } from "@prisma/client";
 import { checkHttp, checkTcp } from "./uptime";
 
+function nextCheckAt(bot: { monitorKind: MonitorKind; checkIntervalMinutes: number; checkIntervalSeconds: number }) {
+  const delayMs = bot.monitorKind === MonitorKind.PRODUCT ? bot.checkIntervalMinutes * 60_000 : bot.checkIntervalSeconds * 1_000;
+  return new Date(Date.now() + delayMs);
+}
+
 async function deliverEvents(botId: string, stateId: string, target: string) {
   const createdEvents = await prisma.notificationEvent.findMany({ where: { currentStateId: stateId } });
   if (!createdEvents.length) return;
@@ -52,7 +57,7 @@ export async function checkBot(id: string) {
       events = events.filter((event) => !coolingDown.has(event.type));
     }
     await prisma.$transaction([
-      prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: result.reachable ? null : result.error ?? "Endpoint unreachable.", consecutiveErrors: result.reachable ? 0 : { increment: 1 }, nextCheckAt: new Date(Date.now() + bot.checkIntervalMinutes * 60_000), lockedAt: null } }),
+      prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: result.reachable ? null : result.error ?? "Endpoint unreachable.", consecutiveErrors: result.reachable ? 0 : { increment: 1 }, nextCheckAt: nextCheckAt(bot), lockedAt: null } }),
       ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${bot.name}` } })),
     ]);
     await deliverEvents(id, state.id, bot.url);
@@ -79,14 +84,14 @@ export async function checkBot(id: string) {
       events = events.filter((event) => !coolingDown.has(event.type));
     }
     await prisma.$transaction([
-      prisma.bot.update({ where: { id }, data: { name: result.title ?? bot.name, imageUrl: result.imageUrl ?? bot.imageUrl, lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: null, consecutiveErrors: 0, nextCheckAt: new Date(Date.now() + bot.checkIntervalMinutes * 60_000), lockedAt: null } }),
+      prisma.bot.update({ where: { id }, data: { name: result.title ?? bot.name, imageUrl: result.imageUrl ?? bot.imageUrl, lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: null, consecutiveErrors: 0, nextCheckAt: nextCheckAt(bot), lockedAt: null } }),
       ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${result.title ?? bot.name}` } })),
     ]);
     await deliverEvents(id, state.id, bot.url);
     return { state, events, confirmed, warnings: result.warnings };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Monitoring failed.";
-    await prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastError: message, consecutiveErrors: { increment: 1 }, nextCheckAt: new Date(Date.now() + bot.checkIntervalMinutes * 60_000), lockedAt: null } });
+    await prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastError: message, consecutiveErrors: { increment: 1 }, nextCheckAt: nextCheckAt(bot), lockedAt: null } });
     throw error;
   }
 }
