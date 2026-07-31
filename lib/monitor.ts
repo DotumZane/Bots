@@ -32,7 +32,7 @@ export async function checkBot(id: string) {
   if (!bot) throw new Error("Bot not found.");
   if (bot.monitorKind === MonitorKind.VALUE) {
     try {
-      const result = await fetchNumericValue(bot.url, { selector: bot.valueSelector, label: bot.valueLabel });
+      const result = await fetchNumericValue(bot.url, { selector: bot.valueSelector, label: bot.valueLabel, browserMode: bot.browserMode });
       const prior = bot.states.find((item) => item.numericValue != null) ?? null;
       const state = await prisma.productState.create({ data: { botId: id, numericValue: result.value, title: bot.name, detectionMethod: DetectionMethod.HTML_TEXT, successful: true, confirmed: true, responseTimeMs: result.responseTimeMs } });
       let events: { type: EventType; description: string }[] = [];
