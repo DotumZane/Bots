@@ -30,6 +30,7 @@ enum MonitorKind {
   PRODUCT
   HTTP
   TCP
+  VALUE
 }
 
 enum ChannelType {
@@ -58,6 +59,9 @@ enum EventType {
   DNS_CHANGED
   SSL_EXPIRING
   CONTENT_MISMATCH
+  VALUE_ABOVE_THRESHOLD
+  VALUE_BELOW_THRESHOLD
+  VALUE_CHANGED
 }
 
 model Bot {
@@ -77,6 +81,13 @@ model Bot {
   dnsMonitoring               Boolean  @default(false)
   sslMonitoring               Boolean  @default(false)
   sslExpiryWarningDays        Int      @default(30)
+  valueLabel                  String?
+  valueUnit                   String?
+  valueSelector               String?
+  alertAbove                  Float?
+  alertBelow                  Float?
+  notifyOnValueChange         Boolean  @default(false)
+  minimumValueChange          Float    @default(0)
   imageUrl                    String?
   enabled                     Boolean  @default(true)
   checkIntervalMinutes        Int      @default(30)
@@ -142,6 +153,7 @@ model ProductState {
   dnsAddressesJson   String?
   sslExpiresAt       DateTime?
   contentMatched     Boolean?
+  numericValue       Float?
   checkedAt          DateTime        @default(now())
   successful         Boolean         @default(true)
   confirmed          Boolean         @default(false)

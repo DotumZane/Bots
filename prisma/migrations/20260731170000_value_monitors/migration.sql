@@ -1,0 +1,8 @@
+ALTER TABLE "Bot" ADD COLUMN "valueLabel" TEXT;
+ALTER TABLE "Bot" ADD COLUMN "valueUnit" TEXT;
+ALTER TABLE "Bot" ADD COLUMN "valueSelector" TEXT;
+ALTER TABLE "Bot" ADD COLUMN "alertAbove" REAL;
+ALTER TABLE "Bot" ADD COLUMN "alertBelow" REAL;
+ALTER TABLE "Bot" ADD COLUMN "notifyOnValueChange" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Bot" ADD COLUMN "minimumValueChange" REAL NOT NULL DEFAULT 0;
+ALTER TABLE "ProductState" ADD COLUMN "numericValue" REAL;

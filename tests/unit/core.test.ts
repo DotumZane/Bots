@@ -7,6 +7,7 @@ import { renderTemplate } from "../../lib/notifications";
 import { detectChanges } from "../../lib/change-detection";
 import { Availability } from "@prisma/client";
 import { botSchema } from "../../lib/validation";
+import { extractNumber } from "../../lib/value-monitor";
 
 describe("price parsing", () => {
   it("normalizes common formats into minor units", () => { expect(parsePrice("$12.99")).toBe(1299); expect(parsePrice("$1,299.00")).toBe(129900); expect(parsePrice("€ 1.299,95", "EUR")).toBe(129995); });
@@ -40,4 +41,7 @@ describe("uptime monitors", () => {
     });
     expect(result.success).toBe(true);
   });
+});
+describe("numeric value monitors", () => {
+  it("extracts rates and other formatted numbers", () => expect(extractNumber("Current interest rate: 6.25%")).toBe(6.25));
 });

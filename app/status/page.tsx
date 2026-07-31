@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Service Status" };
 
 export default async function StatusPage() {
-  const bots = await prisma.bot.findMany({ where: { monitorKind: { not: "PRODUCT" } }, orderBy: { name: "asc" }, include: { states: { where: { successful: true }, orderBy: { checkedAt: "desc" }, take: 1 } } });
+  const bots = await prisma.bot.findMany({ where: { monitorKind: { in: ["HTTP","TCP"] } }, orderBy: { name: "asc" }, include: { states: { where: { successful: true }, orderBy: { checkedAt: "desc" }, take: 1 } } });
   const now = Date.now();
   const rows = await Promise.all(bots.map(async (bot) => {
     const windows = await Promise.all([1,7,30].map(async (days) => {
