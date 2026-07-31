@@ -57,4 +57,5 @@ export const botSchema = z.object({
 });
 
 export const analyzeSchema = z.object({ url: z.string().url(), browserMode: z.boolean().optional() });
+export const valueAnalyzeSchema = z.object({ url: z.string().url() });
 export const channelSchema = z.object({ name: z.string().min(1).max(100), type: z.enum(["DISCORD", "GOTIFY", "PUSHOVER", "TELEGRAM", "SMTP", "WEBHOOK"]), enabled: z.boolean(), configuration: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])) });

@@ -7,7 +7,7 @@ import { renderTemplate } from "../../lib/notifications";
 import { detectChanges } from "../../lib/change-detection";
 import { Availability } from "@prisma/client";
 import { botSchema } from "../../lib/validation";
-import { extractNumber } from "../../lib/value-monitor";
+import { discoverValuesFromHtml, extractNumber } from "../../lib/value-monitor";
 
 describe("price parsing", () => {
   it("normalizes common formats into minor units", () => { expect(parsePrice("$12.99")).toBe(1299); expect(parsePrice("$1,299.00")).toBe(129900); expect(parsePrice("€ 1.299,95", "EUR")).toBe(129995); });
@@ -44,4 +44,5 @@ describe("uptime monitors", () => {
 });
 describe("numeric value monitors", () => {
   it("extracts rates and other formatted numbers", () => expect(extractNumber("Current interest rate: 6.25%")).toBe(6.25));
+  it("discovers selectable numeric values", () => expect(discoverValuesFromHtml("<div><span>Mortgage rate</span><strong id='rate'>6.25%</strong></div>")).toEqual(expect.arrayContaining([expect.objectContaining({value:6.25,unit:"%",selector:"#rate"})])));
 });
