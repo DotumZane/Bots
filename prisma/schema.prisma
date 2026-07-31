@@ -54,6 +54,10 @@ enum EventType {
   ENDPOINT_DOWN
   ENDPOINT_RECOVERED
   HIGH_LATENCY
+  ENDPOINT_STILL_DOWN
+  DNS_CHANGED
+  SSL_EXPIRING
+  CONTENT_MISMATCH
 }
 
 model Bot {
@@ -67,6 +71,12 @@ model Bot {
   notifyOnDown                Boolean  @default(true)
   notifyOnRecovery            Boolean  @default(true)
   notifyOnHighLatency         Boolean  @default(true)
+  failureConfirmationCount    Int      @default(2)
+  reminderIntervalMinutes     Int      @default(0)
+  expectedContent             String?
+  dnsMonitoring               Boolean  @default(false)
+  sslMonitoring               Boolean  @default(false)
+  sslExpiryWarningDays        Int      @default(30)
   imageUrl                    String?
   enabled                     Boolean  @default(true)
   checkIntervalMinutes        Int      @default(30)
@@ -129,6 +139,9 @@ model ProductState {
   warning            String?
   reachable          Boolean?
   responseTimeMs     Int?
+  dnsAddressesJson   String?
+  sslExpiresAt       DateTime?
+  contentMatched     Boolean?
   checkedAt          DateTime        @default(now())
   successful         Boolean         @default(true)
   confirmed          Boolean         @default(false)

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Initial = { id: string; name: string; url: string; hostname: string; monitorKind: "HTTP" | "TCP"; tcpPort: number | null; latencyThresholdMs: number; notifyOnDown: boolean; notifyOnRecovery: boolean; notifyOnHighLatency: boolean; checkIntervalMinutes: number; checkIntervalSeconds?: number; notificationCooldownMinutes: number; enabled: boolean; channels?: { notificationChannelId: string }[] };
+type Initial = { id: string; name: string; url: string; hostname: string; monitorKind: "HTTP" | "TCP"; tcpPort: number | null; latencyThresholdMs: number; notifyOnDown: boolean; notifyOnRecovery: boolean; notifyOnHighLatency: boolean; failureConfirmationCount?: number; reminderIntervalMinutes?: number; expectedContent?: string | null; dnsMonitoring?: boolean; sslMonitoring?: boolean; sslExpiryWarningDays?: number; checkIntervalMinutes: number; checkIntervalSeconds?: number; notificationCooldownMinutes: number; enabled: boolean; channels?: { notificationChannelId: string }[] };
 export function UptimeForm({ initial }: { initial?: Initial }) {
   const router = useRouter();
   const [kind, setKind] = useState<"HTTP" | "TCP">(initial?.monitorKind ?? "HTTP");
@@ -40,6 +40,12 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
       notifyOnDown: data.get("notifyOnDown") === "on",
       notifyOnRecovery: data.get("notifyOnRecovery") === "on",
       notifyOnHighLatency: data.get("notifyOnHighLatency") === "on",
+      failureConfirmationCount: Number(data.get("failureConfirmationCount")),
+      reminderIntervalMinutes: Number(data.get("reminderIntervalMinutes")),
+      expectedContent: String(data.get("expectedContent") || "") || null,
+      dnsMonitoring: data.get("dnsMonitoring") === "on",
+      sslMonitoring: data.get("sslMonitoring") === "on",
+      sslExpiryWarningDays: Number(data.get("sslExpiryWarningDays") || 30),
       enabled: initial?.enabled ?? true,
       checkIntervalMinutes: Math.max(1, Math.ceil(Number(data.get("interval")) / 60)),
       checkIntervalSeconds: Number(data.get("interval")),
@@ -80,11 +86,17 @@ export function UptimeForm({ initial }: { initial?: Initial }) {
         <label className="check"><input name="notifyOnDown" type="checkbox" defaultChecked={initial?.notifyOnDown ?? true} /><span><b>Unreachable</b><small>Alert when the target cannot be reached</small></span></label>
         <label className="check"><input name="notifyOnRecovery" type="checkbox" defaultChecked={initial?.notifyOnRecovery ?? true} /><span><b>Recovered</b><small>Alert when the target comes back online</small></span></label>
         <label className="check"><input name="notifyOnHighLatency" type="checkbox" defaultChecked={initial?.notifyOnHighLatency ?? true} /><span><b>Slow response</b><small>Alert when response time exceeds the threshold</small></span></label>
+        <label className="check"><input name="dnsMonitoring" type="checkbox" defaultChecked={initial?.dnsMonitoring} /><span><b>DNS changes</b><small>Alert when the hostname resolves to different addresses</small></span></label>
+        {kind === "HTTP" && <label className="check"><input name="sslMonitoring" type="checkbox" defaultChecked={initial?.sslMonitoring} /><span><b>SSL certificate</b><small>Alert before an HTTPS certificate expires</small></span></label>}
       </div>
       <div className="fieldGrid">
         <label>Slow-response threshold (ms)<input name="latencyThresholdMs" type="number" min="1" max="60000" defaultValue={initial?.latencyThresholdMs ?? 1000} required /></label>
         <label>Check interval<select name="interval" defaultValue={initial?.checkIntervalSeconds ?? (initial?.checkIntervalMinutes ?? 5) * 60}><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900">15 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option></select></label>
         <label>Notification cooldown (minutes)<input name="cooldown" type="number" min="0" max="10080" defaultValue={initial?.notificationCooldownMinutes ?? 60} required /></label>
+        <label>Failures before alert<select name="failureConfirmationCount" defaultValue={initial?.failureConfirmationCount ?? 2}><option value="1">1 failure</option><option value="2">2 failures (recommended)</option><option value="3">3 failures</option><option value="5">5 failures</option></select></label>
+        <label>Offline reminder<select name="reminderIntervalMinutes" defaultValue={initial?.reminderIntervalMinutes ?? 0}><option value="0">Disabled</option><option value="5">Every 5 minutes</option><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="360">Every 6 hours</option><option value="1440">Every day</option></select></label>
+        {kind === "HTTP" && <label>Expected page text<input name="expectedContent" defaultValue={initial?.expectedContent ?? ""} placeholder="Optional text that must appear" /></label>}
+        {kind === "HTTP" && <label>SSL warning (days before expiry)<input name="sslExpiryWarningDays" type="number" min="1" max="365" defaultValue={initial?.sslExpiryWarningDays ?? 30} /></label>}
       </div>
       {error && <p className="formError">{error}</p>}
     </section>

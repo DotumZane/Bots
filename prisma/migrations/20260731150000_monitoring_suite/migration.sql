@@ -1,0 +1,9 @@
+ALTER TABLE "Bot" ADD COLUMN "failureConfirmationCount" INTEGER NOT NULL DEFAULT 2;
+ALTER TABLE "Bot" ADD COLUMN "reminderIntervalMinutes" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Bot" ADD COLUMN "expectedContent" TEXT;
+ALTER TABLE "Bot" ADD COLUMN "dnsMonitoring" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Bot" ADD COLUMN "sslMonitoring" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Bot" ADD COLUMN "sslExpiryWarningDays" INTEGER NOT NULL DEFAULT 30;
+ALTER TABLE "ProductState" ADD COLUMN "dnsAddressesJson" TEXT;
+ALTER TABLE "ProductState" ADD COLUMN "sslExpiresAt" DATETIME;
+ALTER TABLE "ProductState" ADD COLUMN "contentMatched" BOOLEAN;

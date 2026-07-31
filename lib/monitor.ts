@@ -3,7 +3,7 @@ import { fetchProduct } from "./fetch-product";
 import { detectChanges } from "./change-detection";
 import { sendNotification } from "./notifications";
 import { Availability, DetectionMethod, EventType, MonitorKind } from "@prisma/client";
-import { checkHttp, checkTcp } from "./uptime";
+import { checkHttp, checkTcp, getCertificateExpiry, resolveAddresses } from "./uptime";
 
 function nextCheckAt(bot: { monitorKind: MonitorKind; checkIntervalMinutes: number; checkIntervalSeconds: number }) {
   const delayMs = bot.monitorKind === MonitorKind.PRODUCT ? bot.checkIntervalMinutes * 60_000 : bot.checkIntervalSeconds * 1_000;
@@ -27,41 +27,66 @@ async function deliverEvents(botId: string, stateId: string, target: string) {
 }
 
 export async function checkBot(id: string) {
-  const bot = await prisma.bot.findUnique({ where: { id }, include: { states: { where: { successful: true, confirmed: true }, orderBy: { checkedAt: "desc" }, take: 1 } } });
+  const bot = await prisma.bot.findUnique({ where: { id }, include: { states: { where: { successful: true }, orderBy: { checkedAt: "desc" }, take: 10 } } });
   if (!bot) throw new Error("Bot not found.");
   if (bot.monitorKind !== MonitorKind.PRODUCT) {
     const result = bot.monitorKind === MonitorKind.HTTP
-      ? await checkHttp(bot.url)
+      ? await checkHttp(bot.url, bot.expectedContent)
       : await checkTcp(bot.hostname, bot.tcpPort ?? 80);
     const prior = bot.states[0] ?? null;
+    let dnsAddresses: string[] | null = null;
+    let sslExpiresAt: Date | null = null;
+    const diagnostics: string[] = [];
+    if (bot.dnsMonitoring) {
+      try { dnsAddresses = await resolveAddresses(bot.hostname); } catch (error) { diagnostics.push(`DNS check failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+    }
+    if (bot.sslMonitoring && bot.monitorKind === MonitorKind.HTTP && new URL(bot.url).protocol === "https:") {
+      try { sslExpiresAt = await getCertificateExpiry(bot.hostname, Number(new URL(bot.url).port || 443)); } catch (error) { diagnostics.push(`SSL check failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+    }
+    const failureCount = result.reachable ? 0 : bot.consecutiveErrors + 1;
+    const confirmed = result.reachable || failureCount >= bot.failureConfirmationCount;
     const state = await prisma.productState.create({ data: {
       botId: id,
       availability: result.reachable ? Availability.IN_STOCK : Availability.OUT_OF_STOCK,
       detectionMethod: bot.monitorKind === MonitorKind.HTTP ? DetectionMethod.UPTIME_HTTP : DetectionMethod.UPTIME_TCP,
       successful: true,
-      confirmed: true,
+      confirmed,
       reachable: result.reachable,
       responseTimeMs: result.responseTimeMs,
-      warning: result.error ?? null,
+      dnsAddressesJson: dnsAddresses ? JSON.stringify(dnsAddresses) : null,
+      sslExpiresAt,
+      contentMatched: result.contentMatched,
+      warning: [result.error, ...diagnostics].filter(Boolean).join(" ") || null,
       title: bot.name,
     } });
     let events: { type: EventType; description: string }[] = [];
-    if (!result.reachable && bot.notifyOnDown && prior?.reachable !== false) events.push({ type: EventType.ENDPOINT_DOWN, description: `Endpoint unreachable${result.error ? ` (${result.error})` : ""}` });
-    if (result.reachable && bot.notifyOnRecovery && prior?.reachable === false) events.push({ type: EventType.ENDPOINT_RECOVERED, description: `Endpoint recovered in ${result.responseTimeMs} ms` });
+    if (!result.reachable && confirmed && bot.notifyOnDown && failureCount === bot.failureConfirmationCount) events.push({ type: result.contentMatched === false ? EventType.CONTENT_MISMATCH : EventType.ENDPOINT_DOWN, description: result.contentMatched === false ? `Expected page content is missing` : `Endpoint unreachable${result.error ? ` (${result.error})` : ""}` });
+    if (result.reachable && bot.notifyOnRecovery && bot.consecutiveErrors >= bot.failureConfirmationCount) events.push({ type: EventType.ENDPOINT_RECOVERED, description: `Endpoint recovered in ${result.responseTimeMs} ms` });
     if (result.reachable && bot.notifyOnHighLatency && result.responseTimeMs > bot.latencyThresholdMs && (prior?.responseTimeMs == null || prior.responseTimeMs <= bot.latencyThresholdMs)) {
       events.push({ type: EventType.HIGH_LATENCY, description: `High latency: ${result.responseTimeMs} ms (threshold ${bot.latencyThresholdMs} ms)` });
+    }
+    if (bot.dnsMonitoring && dnsAddresses && prior?.dnsAddressesJson) {
+      const previousAddresses = JSON.parse(prior.dnsAddressesJson) as string[];
+      if (JSON.stringify(previousAddresses) !== JSON.stringify(dnsAddresses)) events.push({ type: EventType.DNS_CHANGED, description: `DNS changed from ${previousAddresses.join(", ")} to ${dnsAddresses.join(", ")}` });
+    }
+    if (sslExpiresAt && sslExpiresAt.getTime() - Date.now() <= bot.sslExpiryWarningDays * 86_400_000) {
+      events.push({ type: EventType.SSL_EXPIRING, description: `SSL certificate expires ${sslExpiresAt.toLocaleDateString()}` });
+    }
+    if (!result.reachable && confirmed && bot.reminderIntervalMinutes > 0 && failureCount > bot.failureConfirmationCount) {
+      const lastOfflineAlert = await prisma.notificationEvent.findFirst({ where: { botId: id, eventType: { in: [EventType.ENDPOINT_DOWN, EventType.CONTENT_MISMATCH, EventType.ENDPOINT_STILL_DOWN] } }, orderBy: { createdAt: "desc" } });
+      if (!lastOfflineAlert || Date.now() - lastOfflineAlert.createdAt.getTime() >= bot.reminderIntervalMinutes * 60_000) events.push({ type: EventType.ENDPOINT_STILL_DOWN, description: `Endpoint is still unreachable${result.error ? ` (${result.error})` : ""}` });
     }
     if (events.length && bot.notificationCooldownMinutes > 0) {
       const recent = await prisma.notificationEvent.findMany({ where: { botId: id, createdAt: { gte: new Date(Date.now() - bot.notificationCooldownMinutes * 60_000) } }, select: { eventType: true } });
       const coolingDown = new Set(recent.map((event) => event.eventType));
-      events = events.filter((event) => !coolingDown.has(event.type));
+      events = events.filter((event) => event.type === EventType.ENDPOINT_STILL_DOWN || !coolingDown.has(event.type));
     }
     await prisma.$transaction([
       prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: result.reachable ? null : result.error ?? "Endpoint unreachable.", consecutiveErrors: result.reachable ? 0 : { increment: 1 }, nextCheckAt: nextCheckAt(bot), lockedAt: null } }),
       ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${bot.name}` } })),
     ]);
     await deliverEvents(id, state.id, bot.url);
-    return { state, events, confirmed: true, warnings: result.error ? [result.error] : [] };
+    return { state, events, confirmed, warnings: [result.error, ...diagnostics].filter(Boolean) as string[] };
   }
   try {
     const result = await fetchProduct(bot.url, { browserMode: bot.browserMode, waitForSelector: bot.waitForSelector ?? undefined, pageLoadDelayMs: bot.pageLoadDelayMs,
