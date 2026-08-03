@@ -1,15 +1,16 @@
 # Bots
 
-Bots is a private, self-hosted product monitor for Unraid. Give it a product URL and it watches price and availability, keeps history, and alerts you only when a meaningful confirmed change occurs.
+Bots is a private, self-hosted product, website, and server monitor designed for Unraid. It watches prices, availability, uptime, response time, DNS, and TLS certificates, keeps history, and alerts you when a meaningful confirmed change occurs.
 
 ## Screenshots
 
-> Dashboard, add-bot flow, history, and notification settings screenshots will be added before Community Applications submission.
+![Bots product monitor setup](docs/screenshots/product-setup.jpg)
 
 ## Features
 
 - JSON-LD, Open Graph/meta, common-selector, visible-text, CSS-selector, and optional Chromium detection
 - Price/availability history with two-result confirmation to reduce false positives
+- HTTP and TCP uptime checks with latency graphs, outage confirmation, recovery alerts, DNS change detection, and TLS-expiry warnings
 - Price drop, target price, back-in-stock, out-of-stock, price-increase, failure, and recovery events
 - Discord, Gotify, Pushover, Telegram, SMTP configuration, and generic webhook channels
 - Encrypted notification secrets, SSRF protection, public-address DNS validation, redirect revalidation, timeouts, and response-size limits
@@ -94,4 +95,6 @@ API routes include `/api/analyze`, CRUD under `/api/bots`, manual/pause/resume/h
 
 ## Community Applications submission
 
-Before submission, publish a multi-architecture image, replace all placeholder repository URLs in `unraid/bots.xml`, host the icon at a stable URL, add screenshots, document tags, and test a clean install plus upgrade on current Unraid.
+The submission-ready Unraid template is [`unraid/bots.xml`](unraid/bots.xml). It installs the public `linux/amd64` image from GHCR and persists all application state under `/data`.
+
+Maintainer submission details and the final verification checklist are in [`unraid/COMMUNITY_APPS.md`](unraid/COMMUNITY_APPS.md).

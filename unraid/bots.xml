@@ -5,11 +5,12 @@
   <Registry>https://github.com/DotumZane/Bots/pkgs/container/bots</Registry>
   <Network>bridge</Network>
   <WebUI>http://[IP]:[PORT:3847]</WebUI>
-  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.png?v=2</Icon>
+  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.png</Icon>
   <Support>https://github.com/DotumZane/Bots/issues</Support>
   <Project>https://github.com/DotumZane/Bots</Project>
-  <Overview>Private, self-hosted price and availability monitoring.</Overview>
-  <Category>Tools: Status: Other:</Category>
+  <Overview>Bots is a private, self-hosted monitoring dashboard for Unraid. Watch product prices and stock, HTTP websites, and TCP servers with history, confirmation rules, outage and recovery alerts, DNS and TLS monitoring, and configurable notification channels. All durable data stays in /data. Bots has no built-in authentication and should not be exposed directly to the internet.</Overview>
+  <Category>Tools: Status:</Category>
+  <License>MIT</License>
   <Config Name="WebUI" Target="3847" Default="3847" Mode="tcp" Description="Bots web interface" Type="Port" Display="always" Required="true" Mask="false">3847</Config>
   <Config Name="Appdata" Target="/data" Default="/mnt/user/appdata/bots" Mode="rw" Description="Database, configuration, cache, and encryption key" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/bots</Config>
   <Config Name="Time zone" Target="TZ" Default="America/Los_Angeles" Description="IANA time zone" Type="Variable" Display="always" Required="true" Mask="false">America/Los_Angeles</Config>
