@@ -10,7 +10,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try { const { id } = await params; const { channelIds = [], ...data } = botSchema.parse(await request.json());
-    if (data.monitorKind === "PRODUCT" || data.monitorKind === "VALUE") await validatePublicUrl(data.url);
+    if (data.monitorKind === "PRODUCT") await validatePublicUrl(data.url);
     const bot = await prisma.$transaction(async (tx) => { await tx.botNotificationChannel.deleteMany({ where: { botId: id } }); return tx.bot.update({ where: { id }, data: { ...data, channels: { create: channelIds.map((notificationChannelId) => ({ notificationChannelId })) } } }); });
     return NextResponse.json({ success: true, bot });
   } catch (error) { return apiError(error); }

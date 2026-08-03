@@ -4,7 +4,6 @@ import { detectChanges } from "./change-detection";
 import { sendNotification } from "./notifications";
 import { Availability, DetectionMethod, EventType, MonitorKind } from "@prisma/client";
 import { checkHttp, checkTcp, getCertificateExpiry, resolveAddresses } from "./uptime";
-import { fetchNumericValue } from "./value-monitor";
 
 function nextCheckAt(bot: { monitorKind: MonitorKind; checkIntervalMinutes: number; checkIntervalSeconds: number }) {
   const delayMs = bot.monitorKind === MonitorKind.PRODUCT ? bot.checkIntervalMinutes * 60_000 : bot.checkIntervalSeconds * 1_000;
@@ -30,30 +29,7 @@ async function deliverEvents(botId: string, stateId: string, target: string) {
 export async function checkBot(id: string) {
   const bot = await prisma.bot.findUnique({ where: { id }, include: { states: { where: { successful: true }, orderBy: { checkedAt: "desc" }, take: 10 } } });
   if (!bot) throw new Error("Bot not found.");
-  if (bot.monitorKind === MonitorKind.VALUE) {
-    try {
-      const result = await fetchNumericValue(bot.url, { selector: bot.valueSelector, label: bot.valueLabel, browserMode: bot.browserMode });
-      const prior = bot.states.find((item) => item.numericValue != null) ?? null;
-      const state = await prisma.productState.create({ data: { botId: id, numericValue: result.value, title: bot.name, detectionMethod: DetectionMethod.HTML_TEXT, successful: true, confirmed: true, responseTimeMs: result.responseTimeMs } });
-      let events: { type: EventType; description: string }[] = [];
-      if (prior?.numericValue != null) {
-        if (bot.alertAbove != null && result.value > bot.alertAbove && prior.numericValue <= bot.alertAbove) events.push({ type: EventType.VALUE_ABOVE_THRESHOLD, description: `${bot.valueLabel ?? "Value"} rose above ${bot.alertAbove}${bot.valueUnit ?? ""}` });
-        if (bot.alertBelow != null && result.value < bot.alertBelow && prior.numericValue >= bot.alertBelow) events.push({ type: EventType.VALUE_BELOW_THRESHOLD, description: `${bot.valueLabel ?? "Value"} fell below ${bot.alertBelow}${bot.valueUnit ?? ""}` });
-        if (bot.notifyOnValueChange && Math.abs(result.value - prior.numericValue) >= bot.minimumValueChange) events.push({ type: EventType.VALUE_CHANGED, description: `${bot.valueLabel ?? "Value"} changed from ${prior.numericValue}${bot.valueUnit ?? ""} to ${result.value}${bot.valueUnit ?? ""}` });
-      }
-      if (events.length && bot.notificationCooldownMinutes > 0) {
-        const recent = await prisma.notificationEvent.findMany({ where: { botId: id, createdAt: { gte: new Date(Date.now() - bot.notificationCooldownMinutes * 60_000) } }, select: { eventType: true } });
-        const coolingDown = new Set(recent.map((event) => event.eventType)); events = events.filter((event) => !coolingDown.has(event.type));
-      }
-      await prisma.$transaction([prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastSuccessfulCheckAt: new Date(), lastError: null, consecutiveErrors: 0, nextCheckAt: nextCheckAt(bot), lockedAt: null } }), ...events.map((event) => prisma.notificationEvent.create({ data: { botId: id, eventType: event.type, previousStateId: prior?.id, currentStateId: state.id, message: `${event.description}: ${bot.name}` } }))]);
-      await deliverEvents(id, state.id, bot.url);
-      return { state, events, confirmed: true, warnings: [] };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Value check failed.";
-      await prisma.bot.update({ where: { id }, data: { lastCheckAt: new Date(), lastError: message, consecutiveErrors: { increment: 1 }, nextCheckAt: nextCheckAt(bot), lockedAt: null } });
-      throw error;
-    }
-  }
+  if (bot.monitorKind === MonitorKind.VALUE) throw new Error("Webpage value monitors are no longer supported.");
   if (bot.monitorKind !== MonitorKind.PRODUCT) {
     const result = bot.monitorKind === MonitorKind.HTTP
       ? await checkHttp(bot.url, bot.expectedContent)
