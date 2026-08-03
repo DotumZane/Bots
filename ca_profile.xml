@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CommunityApplications>
+  <Profile>Bots provides private, self-hosted monitoring for Unraid. Track product prices and stock, HTTP websites, and TCP servers with history, confirmation rules, outage and recovery alerts, DNS and TLS monitoring, and configurable notification channels. Support and issue reporting are available through the project repository.</Profile>
+  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.png</Icon>
+  <WebPage>https://github.com/DotumZane/Bots</WebPage>
+  <Photo>https://raw.githubusercontent.com/DotumZane/Bots/main/docs/screenshots/product-setup.jpg</Photo>
+</CommunityApplications>
