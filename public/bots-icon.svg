@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="28" fill="#ef4d2f"/><rect x="23" y="30" width="72" height="62" rx="18" fill="#fff"/><path d="M59 30V19m-6 0h12" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="45" cy="56" r="7" fill="#17202d"/><circle cx="73" cy="56" r="7" fill="#17202d"/><path d="M42 74h34" stroke="#17202d" stroke-width="6" stroke-linecap="round"/><path d="M104 51v38m-13-14 13 14 13-14" fill="none" stroke="#ffd64f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M82 94h27l-4 11H86z" fill="#fff"/><circle cx="96" cy="110" r="5" fill="#ffd64f"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Bots monitoring icon">
+  <rect width="128" height="128" rx="24" fill="#101925"/>
+  <g fill="none" stroke="#ff4b2b" stroke-width="7" stroke-linecap="round">
+    <path d="M22 76A46 46 0 0 1 45 22M83 22a46 46 0 0 1 23 54M34 101a46 46 0 0 0 20 8M74 109a46 46 0 0 0 20-8"/>
+    <path d="M18 83h27l7 15 12-31 10 30 8-14h28" stroke-linejoin="round"/>
+  </g>
+  <g fill="#f8f6f2">
+    <rect x="36" y="36" width="56" height="43" rx="15"/>
+    <rect x="29" y="49" width="8" height="18" rx="4"/>
+    <rect x="91" y="49" width="8" height="18" rx="4"/>
+    <rect x="61" y="27" width="6" height="13" rx="3"/>
+  </g>
+  <circle cx="64" cy="24" r="7" fill="#ff4b2b"/>
+  <rect x="43" y="46" width="42" height="24" rx="12" fill="#101925"/>
+  <circle cx="55" cy="58" r="4" fill="#ff4b2b"/>
+  <circle cx="73" cy="58" r="4" fill="#ff4b2b"/>
+</svg>

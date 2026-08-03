@@ -5,7 +5,7 @@
   <Registry>https://github.com/DotumZane/Bots/pkgs/container/bots</Registry>
   <Network>bridge</Network>
   <WebUI>http://[IP]:[PORT:3847]</WebUI>
-  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.png</Icon>
+  <Icon>https://raw.githubusercontent.com/DotumZane/Bots/main/public/bots-icon.png?v=2</Icon>
   <Support>https://github.com/DotumZane/Bots/issues</Support>
   <Project>https://github.com/DotumZane/Bots</Project>
   <Overview>Private, self-hosted price and availability monitoring.</Overview>
