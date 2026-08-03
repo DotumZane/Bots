@@ -69,7 +69,23 @@ npm run dev
 
 Run the scheduler separately with `npm run worker`. Other commands: `npm run build`, `npm run start`, `npm test`, `npm run test:e2e`, `npm run lint`, and `npm run typecheck`.
 
-### Publish the Unraid image from macOS
+### Testing and stable releases
+
+Development happens on the `testing` branch. Every push to `testing` runs the test suite and publishes:
+
+```text
+ghcr.io/dotumzane/bots:testing
+```
+
+After testing succeeds, merge `testing` into `main`. Every push to `main` runs the same checks and publishes the stable Community Applications image:
+
+```text
+ghcr.io/dotumzane/bots:latest
+```
+
+To test on Unraid without risking stable Bots data, create a second container with the name `Bots-Testing`, repository `ghcr.io/dotumzane/bots:testing`, a different WebUI port such as `3848`, and a separate appdata folder such as `/mnt/user/appdata/bots-testing`.
+
+### Publish an image from macOS
 
 With Docker Desktop running and authenticated to GHCR:
 
@@ -77,7 +93,7 @@ With Docker Desktop running and authenticated to GHCR:
 npm run docker:publish
 ```
 
-This builds `linux/amd64` locally and publishes `ghcr.io/dotumzane/bots:latest`. Normal Git pushes do not build containers; the GitHub Actions workflow is retained as a manual fallback.
+This builds `linux/amd64` locally and publishes `ghcr.io/dotumzane/bots:latest`. Use `npm run docker:publish-testing` to publish the testing tag instead. Normal pushes to `main` and `testing` build automatically in GitHub Actions, while manual workflow runs remain available as a fallback.
 
 ## Architecture
 

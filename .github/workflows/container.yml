@@ -1,7 +1,15 @@
 name: Build container
 
 on:
+  push:
+    branches:
+      - main
+      - testing
   workflow_dispatch:
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -40,7 +48,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/bots
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=testing,enable=${{ github.ref == 'refs/heads/testing' }}
             type=ref,event=tag
             type=sha
       - uses: docker/build-push-action@v6

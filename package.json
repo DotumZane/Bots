@@ -18,7 +18,8 @@
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts",
     "docker:build": "docker buildx build --platform linux/amd64 --load -t ghcr.io/dotumzane/bots:latest .",
-    "docker:publish": "docker buildx build --platform linux/amd64 --push -t ghcr.io/dotumzane/bots:latest ."
+    "docker:publish": "docker buildx build --platform linux/amd64 --push -t ghcr.io/dotumzane/bots:latest .",
+    "docker:publish-testing": "docker buildx build --platform linux/amd64 --push -t ghcr.io/dotumzane/bots:testing ."
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",
