@@ -6,7 +6,28 @@ import type { DetectionResult } from "./types";
 
 type JsonObject = Record<string, unknown>;
 const asObject = (value: unknown): JsonObject | undefined => typeof value === "object" && value !== null ? value as JsonObject : undefined;
-const firstString = (value: unknown): string | undefined => Array.isArray(value) ? firstString(value[0]) : typeof value === "string" ? value : asObject(value)?.url as string | undefined;
+const firstString = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) return value.map(firstString).find((item) => item != null);
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  const url = asObject(value)?.url;
+  return url == null ? undefined : firstString(url);
+};
+
+function offerWithPrice(value: unknown): { offer: JsonObject; specification?: JsonObject } | undefined {
+  const offers = Array.isArray(value) ? value : [value];
+  for (const candidate of offers) {
+    const offer = asObject(candidate);
+    if (!offer) continue;
+    if (firstString(offer.price) != null || firstString(offer.lowPrice) != null) return { offer };
+    const specifications = Array.isArray(offer.priceSpecification) ? offer.priceSpecification : [offer.priceSpecification];
+    for (const candidateSpecification of specifications) {
+      const specification = asObject(candidateSpecification);
+      if (specification && (firstString(specification.price) != null || firstString(specification.lowPrice) != null)) return { offer, specification };
+    }
+  }
+  return undefined;
+}
 
 function findProducts(node: unknown, results: JsonObject[] = []): JsonObject[] {
   if (Array.isArray(node)) node.forEach((item) => findProducts(item, results));
@@ -41,12 +62,15 @@ export function analyzeHtml(html: string, pageUrl: string, selectors?: Record<st
         const products = findProducts(JSON.parse($(script).text()));
         const product = products[0];
         if (!product) continue;
-        const offersRaw = Array.isArray(product.offers) ? product.offers[0] : product.offers;
+        const priced = offerWithPrice(product.offers);
+        const offersRaw = priced?.offer ?? (Array.isArray(product.offers) ? product.offers[0] : product.offers);
         const offers = asObject(offersRaw) ?? product;
-        const currency = firstString(offers.priceCurrency) ?? "USD";
-        const priceText = firstString(offers.price) ?? firstString(offers.lowPrice);
+        const specification = priced?.specification;
+        const currency = firstString(offers.priceCurrency) ?? firstString(specification?.priceCurrency) ?? "USD";
+        const priceText = firstString(offers.price) ?? firstString(offers.lowPrice) ?? firstString(specification?.price) ?? firstString(specification?.lowPrice);
+        const regularPriceText = firstString(offers.highPrice) ?? firstString(specification?.highPrice);
         result = { ...result, title: firstString(product.name), imageUrl: firstString(product.image), priceMinor: priceText ? parsePrice(priceText, currency) : undefined,
-          regularPriceMinor: firstString(offers.highPrice) ? parsePrice(firstString(offers.highPrice)!, currency) : undefined,
+          regularPriceMinor: regularPriceText ? parsePrice(regularPriceText, currency) : undefined,
           currency, availability: normalizeAvailability(firstString(offers.availability)), detectionMethod: DetectionMethod.JSON_LD };
         break;
       } catch { warnings.push("Invalid JSON-LD block ignored."); }
