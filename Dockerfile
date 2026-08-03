@@ -17,6 +17,7 @@ ENV NODE_ENV=production PORT=3847 DATA_DIR=/data DATABASE_URL=file:/data/bots.db
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
