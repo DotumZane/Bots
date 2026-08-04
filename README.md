@@ -6,6 +6,14 @@ Bots is a private, self-hosted product, website, and server monitor designed for
 
 ![Bots product monitor setup](docs/screenshots/product-setup.jpg)
 
+## Support and bug reports
+
+- [Report a bug](https://github.com/DotumZane/Bots/issues/new?template=bug_report.yml)
+- [View existing issues](https://github.com/DotumZane/Bots/issues)
+- [Read the support guide](SUPPORT.md)
+
+Please remove passwords, tokens, email addresses, and private URLs from screenshots and logs before submitting a report. Report security vulnerabilities privately through [GitHub Security Advisories](https://github.com/DotumZane/Bots/security/advisories/new).
+
 ## Features
 
 - JSON-LD, Open Graph/meta, common-selector, visible-text, CSS-selector, and optional Chromium detection
