@@ -9,7 +9,7 @@
 - **Container image:** `ghcr.io/dotumzane/bots:latest`
 - **Project:** `https://github.com/DotumZane/Bots`
 - **Support:** `https://github.com/DotumZane/Bots/issues`
-- **Category:** Tools / Status
+- **Category:** Tools / Utilities
 - **License:** MIT
 
 ## Suggested submission description
